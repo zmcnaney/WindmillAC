@@ -7,6 +7,6 @@
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/zmcnaney/HACS-WindmillAC",
-  "requirements": ["requests", "blynklib"],
+  "requirements": [],
   "version": "1.1.0"
 }

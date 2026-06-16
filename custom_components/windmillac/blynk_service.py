@@ -1,12 +1,17 @@
+import json
 import logging
-import requests
 from urllib.parse import urlencode
+
+import aiohttp
 from homeassistant.components.climate.const import HVACMode, ClimateEntityFeature
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import PRODUCT_AC, PRODUCT_FAN
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+
 
 class BlynkService:
     def __init__(self, hass, server, token):
@@ -14,6 +19,7 @@ class BlynkService:
         self.server = server
         self.token = token
         self._product_type = None
+        self._session = async_get_clientsession(hass)
         # Mapping of string values to pin values
         self.fan_speed_mapping = {
             "Auto": "0",
@@ -36,49 +42,42 @@ class BlynkService:
         return f"{self.server}/{endpoint}?{query}"
 
     async def async_get_pin_value(self, pin):
-        _LOGGER.debug(f"Getting pin value for pin {pin}")
         params = {'token': self.token}
-        url = self._get_request_url(f'external/api/get', params) + f"&{pin}"
-        _LOGGER.debug(f"Request URL: {url}")
+        url = self._get_request_url('external/api/get', params) + f"&{pin}"
+        _LOGGER.debug(f"GET {url}")
 
-        def fetch():
-            response = requests.get(url)
-            _LOGGER.debug(f"Response Status Code: {response.status_code}")
-            _LOGGER.debug(f"Response Text: {response.text}")
+        try:
+            async with self._session.get(url, timeout=REQUEST_TIMEOUT) as response:
+                text = await response.text()
+                _LOGGER.debug(f"Response {response.status}: {text!r}")
+                if response.status != 200:
+                    raise Exception(f"Failed to get pin value for {pin}: HTTP {response.status}")
+        except aiohttp.ClientError as exc:
+            raise Exception(f"Failed to get pin value for {pin}: {exc}") from exc
 
-            if response.status_code == 200:
-                _LOGGER.debug(f"Response RAW: {response}")
-                try:
-                    if response.text.isdigit():
-                        return int(response.text)
-                    elif response.text.isalpha():
-                        return response.text.strip()
-                    else:
-                        return response.json()[0]
-                except (ValueError, IndexError) as e:
-                    raise Exception(f"Failed to parse response for {pin}: {e}")
-            else:
-                raise Exception(f"Failed to get pin value for {pin}")
-
-        return await self.hass.async_add_executor_job(fetch)
+        try:
+            if text.isdigit():
+                return int(text)
+            if text.isalpha():
+                return text.strip()
+            return json.loads(text)[0]
+        except (ValueError, IndexError) as exc:
+            raise Exception(f"Failed to parse response for {pin}: {exc}") from exc
 
     async def async_set_pin_value(self, pin, value):
-        _LOGGER.debug(f"Setting pin value for pin {pin} to {value}")
         params = {'token': self.token, pin: value}
-        url = self._get_request_url(f'external/api/update', params)
-        _LOGGER.debug(f"Request URL: {url}")
+        url = self._get_request_url('external/api/update', params)
+        _LOGGER.debug(f"GET {url}")
 
-        def fetch():
-            response = requests.get(url)
-            _LOGGER.debug(f"Response Status Code: {response.status_code}")
-            _LOGGER.debug(f"Response Text: {response.text}")
-
-            if response.status_code == 200:
-                return response.text.strip()
-            else:
-                raise Exception(f"Failed to set pin value for {pin}")
-
-        return await self.hass.async_add_executor_job(fetch)
+        try:
+            async with self._session.get(url, timeout=REQUEST_TIMEOUT) as response:
+                text = (await response.text()).strip()
+                _LOGGER.debug(f"Response {response.status}: {text!r}")
+                if response.status != 200:
+                    raise Exception(f"Failed to set pin value for {pin}: HTTP {response.status}")
+                return text
+        except aiohttp.ClientError as exc:
+            raise Exception(f"Failed to set pin value for {pin}: {exc}") from exc
 
     async def async_set_power(self, value):
         _LOGGER.debug(f"Setting Raw Power: {value}")
