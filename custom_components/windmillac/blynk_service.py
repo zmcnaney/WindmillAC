@@ -3,6 +3,8 @@ import requests
 from urllib.parse import urlencode
 from homeassistant.components.climate.const import HVACMode, ClimateEntityFeature
 
+from .const import PRODUCT_AC, PRODUCT_FAN
+
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
 
@@ -11,6 +13,7 @@ class BlynkService:
         self.hass = hass
         self.server = server
         self.token = token
+        self._product_type = None
         # Mapping of string values to pin values
         self.fan_speed_mapping = {
             "Auto": "0",
@@ -141,3 +144,37 @@ class BlynkService:
                 fan_mode = "High"
         _LOGGER.debug(f"Pin value: {pin_value} is mapped mode mapped to: {fan_mode}")
         return fan_mode
+
+    async def async_get_product_type(self):
+        """Detect whether this device is an AC or a Fan.
+
+        Primary signal: V6 returns a product name string (e.g. "Fan").
+        Fallback: probe V3 (HVAC mode pin) — exists on AC, absent on Fan.
+        """
+        if self._product_type is not None:
+            return self._product_type
+
+        try:
+            v6 = await self.async_get_pin_value('V6')
+            if isinstance(v6, str):
+                v6_lower = v6.lower()
+                if "fan" in v6_lower:
+                    _LOGGER.debug("V6 reports product 'Fan'")
+                    self._product_type = PRODUCT_FAN
+                    return self._product_type
+                if "ac" in v6_lower or "air" in v6_lower:
+                    _LOGGER.debug(f"V6 reports product '{v6}' -> AC")
+                    self._product_type = PRODUCT_AC
+                    return self._product_type
+        except Exception as e:
+            _LOGGER.debug(f"V6 product probe failed, falling back to V3 probe: {e}")
+
+        try:
+            await self.async_get_pin_value('V3')
+            _LOGGER.debug("V3 mode pin present -> AC")
+            self._product_type = PRODUCT_AC
+        except Exception as e:
+            _LOGGER.debug(f"V3 mode pin absent, defaulting to Fan: {e}")
+            self._product_type = PRODUCT_FAN
+
+        return self._product_type

@@ -2,12 +2,12 @@
 import logging
 from datetime import timedelta
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from .const import DOMAIN, UPDATE_INTERVAL
+from .const import DOMAIN, UPDATE_INTERVAL, PRODUCT_FAN
 
 _LOGGER = logging.getLogger(__name__)
 
 class WindmillDataUpdateCoordinator(DataUpdateCoordinator):
-    """Class to manage fetching data from the Windmill AC API."""
+    """Class to manage fetching data from the Windmill AC / Fan API."""
 
     def __init__(self, hass, blynk_service):
         """Initialize."""
@@ -21,17 +21,24 @@ class WindmillDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self):
-        """Fetch data from Windmill AC."""
-        _LOGGER.debug("Fetching data from Windmill AC")
+        """Fetch data from Windmill device, scoped to the product type."""
+        _LOGGER.debug("Fetching data from Windmill device")
         try:
-            data = {
-                "current_temp": await self.blynk_service.async_get_pin_value('V1'),
-                "target_temp": await self.blynk_service.async_get_pin_value('V2'),
-                "mode": await self.blynk_service.async_get_mode(),
-                "fan": await self.blynk_service.async_get_fan(),
-                "power": await self.blynk_service.async_get_power(),
-            }
-            _LOGGER.debug(f"Data fetched from Windmill AC: {data}")
+            product_type = await self.blynk_service.async_get_product_type()
+            if product_type == PRODUCT_FAN:
+                data = {
+                    "fan": await self.blynk_service.async_get_fan(),
+                    "power": await self.blynk_service.async_get_power(),
+                }
+            else:
+                data = {
+                    "current_temp": await self.blynk_service.async_get_pin_value('V1'),
+                    "target_temp": await self.blynk_service.async_get_pin_value('V2'),
+                    "mode": await self.blynk_service.async_get_mode(),
+                    "fan": await self.blynk_service.async_get_fan(),
+                    "power": await self.blynk_service.async_get_power(),
+                }
+            _LOGGER.debug(f"Data fetched from Windmill ({product_type}): {data}")
             return data
         except Exception as err:
             _LOGGER.error(f"Error fetching data: {err}")

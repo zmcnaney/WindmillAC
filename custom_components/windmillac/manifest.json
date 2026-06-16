@@ -1,12 +1,12 @@
 {
   "domain": "windmillac",
   "name": "WindmillAC",
-  "codeowners": ["@bzellman"],
+  "codeowners": ["@zmcnaney"],
   "config_flow": true,
-  "documentation": "https://github.com/bzellman/HACS-WindmillAC",
+  "documentation": "https://github.com/zmcnaney/WindmillAC",
   "integration_type": "device",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/bzellman/HACS-WindmillAC",
+  "issue_tracker": "https://github.com/zmcnaney/HACS-WindmillAC",
   "requirements": ["requests", "blynklib"],
-  "version": "1.0.6"
+  "version": "1.1.0"
 }
