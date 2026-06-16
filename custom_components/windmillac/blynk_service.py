@@ -99,7 +99,10 @@ class BlynkService:
         await self.async_set_pin_value('V3', pin_value)
 
     async def async_set_fan(self, value):
-        # value = value.lower()  # Ensure consistent casing
+        if self._product_type == PRODUCT_FAN:
+            _LOGGER.debug(f"Setting fan speed {value} (numeric)")
+            await self.async_set_pin_value('V4', str(value))
+            return
         pin_value = self.fan_speed_mapping.get(value, "0")
         _LOGGER.debug(f"Setting fan {value} to pin {pin_value}")
         await self.async_set_pin_value('V4', pin_value)
@@ -132,6 +135,10 @@ class BlynkService:
 
     async def async_get_fan(self):
         pin_value = await self.async_get_pin_value('V4')
+        if self._product_type == PRODUCT_FAN:
+            speed = str(pin_value).strip()
+            _LOGGER.debug(f"Fan speed pin value: {speed}")
+            return speed
         pin_value = str(pin_value).lower()
         fan_mode = "Auto"
 

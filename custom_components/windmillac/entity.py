@@ -17,7 +17,6 @@ from homeassistant.util.percentage import (
 from .const import (
     DOMAIN,
     FAN_ORDERED_SPEEDS,
-    FAN_PRESET_AUTO,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -145,11 +144,9 @@ class WindmillClimate(CoordinatorEntity, ClimateEntity):
 class WindmillFan(CoordinatorEntity, FanEntity):
     """Representation of a Windmill Fan device."""
 
-    _attr_preset_modes = [FAN_PRESET_AUTO]
     _attr_speed_count = len(FAN_ORDERED_SPEEDS)
     _attr_supported_features = (
         FanEntityFeature.SET_SPEED
-        | FanEntityFeature.PRESET_MODE
         | FanEntityFeature.TURN_ON
         | FanEntityFeature.TURN_OFF
     )
@@ -183,17 +180,10 @@ class WindmillFan(CoordinatorEntity, FanEntity):
 
     @property
     def percentage(self):
-        """Return the current speed as a percentage, or None when in a preset mode."""
+        """Return the current speed as a percentage."""
         speed = self.coordinator.data.get("fan")
         if speed in FAN_ORDERED_SPEEDS:
             return ordered_list_item_to_percentage(FAN_ORDERED_SPEEDS, speed)
-        return None
-
-    @property
-    def preset_mode(self):
-        speed = self.coordinator.data.get("fan")
-        if speed == FAN_PRESET_AUTO:
-            return FAN_PRESET_AUTO
         return None
 
     async def async_set_percentage(self, percentage):
@@ -206,19 +196,9 @@ class WindmillFan(CoordinatorEntity, FanEntity):
         await self.coordinator.blynk_service.async_set_fan(speed)
         await self.coordinator.async_request_refresh()
 
-    async def async_set_preset_mode(self, preset_mode):
-        if preset_mode != FAN_PRESET_AUTO:
-            return
-        if not self.coordinator.data.get("power"):
-            await self.coordinator.blynk_service.async_set_power(True)
-        await self.coordinator.blynk_service.async_set_fan(FAN_PRESET_AUTO)
-        await self.coordinator.async_request_refresh()
-
     async def async_turn_on(self, percentage=None, preset_mode=None, **kwargs):
         await self.coordinator.blynk_service.async_set_power(True)
-        if preset_mode == FAN_PRESET_AUTO:
-            await self.coordinator.blynk_service.async_set_fan(FAN_PRESET_AUTO)
-        elif percentage is not None and percentage > 0:
+        if percentage is not None and percentage > 0:
             speed = percentage_to_ordered_list_item(FAN_ORDERED_SPEEDS, percentage)
             await self.coordinator.blynk_service.async_set_fan(speed)
         await self.coordinator.async_request_refresh()
