@@ -95,10 +95,12 @@ This might occur if something wasn't right the first time you added the device. 
 
 ## Support & Contributing
 
-This is a community-maintained integration (v1). The developer welcomes community support, feedback, and contributions. For issues or feature requests, please use the [GitHub Issues](https://github.com/bzellman/WindmillAC/issues) page.
+This is a community-maintained integration (v1). The developer welcomes community support, feedback, and contributions. For issues or feature requests, please use the [GitHub Issues](https://github.com/zmcnaney/WindmillAC/issues) page.
 
 ## Disclaimer
 ## Notes / Changelog
+
+2026-06-16:  Forked and updated the HACs integration from https://github.com/bzellman/WindmillAC/ to allow for FAN creation.
 
 2024-09: Replaced deprecated Home Assistant call `async_forward_entry_setups` with the recommended `async_setup_platforms` in `__init__.py` (see HA June 2024 dev blog).
 
