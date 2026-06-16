@@ -15,7 +15,7 @@ PRODUCT_FAN = "fan"
 
 PLATFORMS_BY_PRODUCT = {
     PRODUCT_AC: ["climate"],
-    PRODUCT_FAN: ["fan"],
+    PRODUCT_FAN: ["fan", "switch"],
 }
 
 FAN_ORDERED_SPEEDS = ["1", "2", "3", "4", "5"]

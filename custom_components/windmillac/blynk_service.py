@@ -153,6 +153,16 @@ class BlynkService:
         _LOGGER.debug(f"Pin value: {pin_value} is mapped mode mapped to: {fan_mode}")
         return fan_mode
 
+    async def async_get_autofade(self) -> bool:
+        pin_value = await self.async_get_pin_value('V1')
+        _LOGGER.debug(f"Autofade pin value: {pin_value}")
+        return pin_value == 1
+
+    async def async_set_autofade(self, value: bool):
+        pin_value = self.power_mapping.get(value, 0)
+        _LOGGER.debug(f"Setting autofade to {value} (pin {pin_value})")
+        await self.async_set_pin_value('V1', pin_value)
+
     async def async_get_product_type(self):
         """Detect whether this device is an AC or a Fan.
 

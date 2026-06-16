@@ -29,6 +29,7 @@ class WindmillDataUpdateCoordinator(DataUpdateCoordinator):
                 data = {
                     "fan": await self.blynk_service.async_get_fan(),
                     "power": await self.blynk_service.async_get_power(),
+                    "autofade": await self.blynk_service.async_get_autofade(),
                 }
             else:
                 data = {

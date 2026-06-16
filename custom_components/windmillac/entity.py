@@ -6,6 +6,7 @@ from homeassistant.components.fan import (
     FanEntityDescription,
     FanEntityFeature,
 )
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.const import UnitOfTemperature, ATTR_TEMPERATURE
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import DeviceInfo
@@ -206,5 +207,49 @@ class WindmillFan(CoordinatorEntity, FanEntity):
 
     async def async_turn_off(self, **kwargs):
         await self.coordinator.blynk_service.async_set_power(False)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+
+
+class WindmillAutofadeSwitch(CoordinatorEntity, SwitchEntity):
+    """LED autofade on/off switch for the Windmill Fan (Blynk pin V1).
+
+    Controls whether the fan's status LEDs fade smoothly between speed
+    changes; it does not affect the fan blades themselves.
+    """
+
+    def __init__(self, coordinator, entity_description: SwitchEntityDescription):
+        super().__init__(coordinator)
+        self.entity_description = entity_description
+        self._attr_name = entity_description.name
+        token = coordinator.blynk_service.token
+        self._attr_unique_id = f"{DOMAIN}_{token}_{entity_description.key}"
+        fan_device_id = f"{DOMAIN}_{token}_windmill_fan"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, fan_device_id)},
+            name="Windmill Fan",
+            manufacturer="Windmill",
+        )
+        _LOGGER.debug(f"Setup WindmillAutofadeSwitch: {self.entity_description.name}")
+
+    @property
+    def unique_id(self):
+        return self._attr_unique_id
+
+    @property
+    def name(self):
+        return self.entity_description.name
+
+    @property
+    def is_on(self):
+        return bool(self.coordinator.data.get("autofade"))
+
+    async def async_turn_on(self, **kwargs):
+        await self.coordinator.blynk_service.async_set_autofade(True)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs):
+        await self.coordinator.blynk_service.async_set_autofade(False)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
