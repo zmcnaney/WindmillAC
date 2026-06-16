@@ -1,6 +1,8 @@
 # WindmillAC Home Assistant Integration
 
-This integration creates a climate entity to connect your Windmill AC units into Home Assistant, allowing you to control temperature, fan speed, and other settings directly from your Home Assistant dashboard.
+This integration connects your Windmill AC and Windmill Fan units to Home Assistant. Windmill AC units appear as a climate entity (temperature, fan speed, mode); standalone Windmill Fans appear as a fan entity with speeds 1-5.
+
+> **Fork**: This is a fork of [bzellman/WindmillAC](https://github.com/bzellman/WindmillAC) that adds support for the standalone Windmill Fan product. The canonical home for this fork is [zmcnaney/WindmillAC](https://github.com/zmcnaney/WindmillAC).
 
 > **Note**: This is not an official integration. It is not associated, maintained, supported, or endorsed by Windmill. Windmill is a young company, their tech might change, and this integration might break. Use at your own risk.
 
@@ -28,7 +30,7 @@ HACS is the Home Assistant Community Store that allows you to easily install cus
 3. Click the **three dots menu** (⋮) in the top right corner
 4. Select **Custom repositories**
 5. In the dialog that opens:
-   - **Repository URL**: `https://github.com/bzellman/WindmillAC`
+   - **Repository URL**: `https://github.com/zmcnaney/WindmillAC`
    - **Category**: Select "Integration"
 6. Click **Add**
 
@@ -92,6 +94,16 @@ If clicking on the Auth Token doesn't copy it (like it says it will) try one of 
 **Error Failed to get pin value for V1**
 
 This might occur if something wasn't right the first time you added the device. Try adding a second device (step 5 above) and then if that works, delete the one throwing the error afterward. 
+
+## Diagnostics
+
+If you want to help identify additional Windmill device features (oscillation, sleep mode, timers, etc.), the repo ships a read-only pin-discovery script. Run it locally with your auth token to dump every populated Blynk pin on your device:
+
+```
+python scripts/discover_pins.py <YOUR_TOKEN>
+```
+
+Pass `--show-empty` or `--show-errors` for the full picture. The script never writes to the device.
 
 ## Support & Contributing
 
